@@ -1,0 +1,85 @@
+library(tidyverse) #tidy the data
+library(psych) #tools for psychological analysis including Cronbach's alpha
+library(polycor) #poly correlations
+library(lavaan)#cfa 
+
+WVS_data_NG <- read_delim("/Users/adaoraokwo/Desktop/SocialResearch/F00013153-WVS_Wave_7_Nigeria_Csv_v5.0.csv", delim = ";") #read data
+
+#Perform EFA on Gender module variables
+efa_vars <- WVS_data_NG[, c(414:428, 444:447, 471:483)]
+na_cats <- c(-5, -4, -3, -2, -1, -99)  #how many of each missing values 
+sapply(na_cats, function(x) sum(efa_vars == x, na.rm = TRUE)) #43, 0, 0, 14, 51, 5
+efa_vars[efa_vars == -5 | efa_vars == -2 |efa_vars == -1] <- NA
+sum(is.na(efa_vars)) #1145
+sum(apply(efa_vars, 1, function(row) any(is.na(row)))) #rows with any NAs - #433
+
+#Impute missing data using FIML-like approach
+efa_vars <- efa_vars%>%mutate_all(factor)
+efa_imp <- mice(efa_vars, method = "polr", m = 5, seed = 123, print = FALSE) 
+efa_imp <- complete(efa_imp, 1)
+efa_df <- as.data.frame(lapply(efa_df, as.factor))
+
+#Perform EFA
+# Step 1: Determine the number of factors using parallel analysis
+poly_matrix <- hetcor(efa_df)$correlations
+fa.parallel(poly_matrix, fa = "fa", n.obs = nrow(efa_df)) #determine num of factors
+sum(is.na(efa_df))
+sum(is.nan(poly_matrix))
+summary(efa_df)
+
+# Step 2: Perform EFA with the chosen number of factors
+efa_result <- fa(poly_matrix, nfactors = 10, rotate = "oblimin")
+efa_result_varimax <- fa(poly_matrix, nfactors = 10, rotate = "varimax")
+
+# Step 3: Review the results
+print(efa_result)
+print(efa_result_varimax)
+
+#Perform CFA to confirm results
+#Define the CFA model - #other cultural norms
+cfa_model <- '
+f1 =~ G334a + G337a + G337b + G338a + G338b
+f2 =~ G307 + G308 + G309 + H331
+f3 =~ H333 + H334 + G312
+f4 =~ G317 + G318 + H336
+f5 =~ G321 + G322 + H336
+f6 =~ G327 + H338 + H339 + H340
+f7 =~ G309 + G316 + H335
+f8 =~ G312 + G323 + G324 + H332 + H340 + H341
+f9 =~ G329 + G330 + H297 + H336 + H341
+f10 =~ H337 + H341
+'
+
+#Fit the CFA model to data
+fit <- cfa(cfa_model, data = efa_df, ordered = TRUE)
+
+#Display the summary of the CFA model fit
+summary(fit, fit.measures = TRUE, standardized = TRUE)
+
+#Cronbach alpha for internal reliability
+efa_df1 <- efa_df #create a data subset
+efa_df1 <- as.data.frame(lapply(efa_df1, as.numeric))
+
+#Based on Varimax
+alpha(efa_df1[, c(15:19)], check.keys=TRUE) #f1 0.82, drop G334a  to increase to 0.84 - contraceptive use
+alpha(efa_df1[, c(1:3, 21)], check.keys=TRUE) #f2 0.69, drop H331 to remain the same - 
+alpha(efa_df1[, c(23:24, 4)], check.keys=TRUE) #f3 0.76, drop G312 to increase to 0.92 - honour family's wishes to marry against personal wishes
+alpha(efa_df1[, c(6:7, 26)], check.keys=TRUE) #f4 0.69, drop H336 to increase to 0.85 - Hurried parenthood following marriage
+alpha(efa_df1[, c(8:9, 26)], check.keys=TRUE) #f5 0.72, drop H336 to increase to 0.89 - love should precede sex
+alpha(efa_df1[, c(12, 28:30)], check.keys=TRUE) #f6 0.57, drop H338 to go up 0.62
+alpha(efa_df1[, c(3, 5, 25)], check.keys=TRUE) #f7 0.75, drop G309 to become 0.77 - delayed parenthood until adulthood
+alpha(efa_df1[, c(4, 10:11, 22, 30:31)], check.keys=TRUE) #f8 0.48, drop -H341 to go up 0.56
+alpha(efa_df1[, c(13:14, 20, 26, 31)], check.keys=TRUE) #f9 0.35, drop -H297 to go up 0.52
+alpha(efa_df1[, c(27, 31)], check.keys=TRUE) #f10 0.35
+
+#Based on Oblimin
+alpha(efa_df1[, c(21, 27:31)], check.keys=TRUE) #f10 0.35
+alpha(efa_df1[, c(4, 10:11, 20:22)], check.keys=TRUE) #0.43, drop H297 to be 0.54
+alpha(efa_df1[, c(2:3, 5, 25)], check.keys=TRUE) #0.79 MR1 & MR10 delayed timing for marriage/pregnancy
+alpha(efa_df1[, c(6:9)], check.keys=TRUE) #0.73 MR6 & MR5 should you love before sex and should kids immediately follow marriage
+alpha(efa_df1[, c(4, 10, 22:24)], check.keys=TRUE) #0.68 MR2 & MR7 - drop G323 to become 0.76
+alpha(efa_df1[, c(5:7, 25)], check.keys=TRUE) #0.70 MR5 & MR10
+alpha(efa_df1[, c(10:11)], check.keys=TRUE) #0.70 MR5 & MR10
+
+
+
