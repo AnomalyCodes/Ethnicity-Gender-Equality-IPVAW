@@ -1,4 +1,5 @@
 library(tidyverse) #tidy the data
+library(mice) #multiple imputation package
 library(psych) #tools for psychological analysis including Cronbach's alpha
 library(polycor) #poly correlations
 library(lavaan)#cfa 
