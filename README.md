@@ -3,5 +3,5 @@ Code for the article "Ethnicity, Support for Gender Equality, and the Justificat
 
 Author: Adaora Okwo.
 Background: BSc Psychology/Sociology; MSc Applied Data Science. 
-Data might be available at https://www.worldvaluessurvey.org/WVSDocumentationWV7.jsp; version 5.0 for Nigeria was used for analysis. Request data [here](adaorao60@gmail.com) if unavailable. 
+Data might be available at https://www.worldvaluessurvey.org/WVSDocumentationWV7.jsp; version 5.0 for Nigeria was used for analysis. Request data [here](mailto:adaorao60@gmail.com) if unavailable. 
 
